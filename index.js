@@ -43,7 +43,7 @@ function updateSpecFromPackage() {
 
 }
 
-function init() {
+function init(options) {
   spec = { swagger: '2.0', paths: {} };
 
   const endpoints = listEndpoints(app);
@@ -77,12 +77,19 @@ function init() {
 
   updateSpecFromPackage();
   spec = patchSpec(predefinedSpec);
-  app.use(packageInfo.baseUrlPath + '/api-spec', (req, res, next) => {
+  let baseUrlPath = "";
+  if(typeof (options.baseUrlPath) === "string") {
+    baseUrlPath = options.baseUrlPath;
+  }
+  else if(packageInfo.baseUrlPath){
+    baseUrlPath = packageInfo.baseUrlPath;
+  }
+  app.use(baseUrlPath + '/api-spec', (req, res, next) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(JSON.stringify(patchSpec(predefinedSpec), null, 2));
     return next();
   });
-  app.use(packageInfo.baseUrlPath + '/api-docs', swaggerUi.serve, (req, res) => {
+  app.use(baseUrlPath + '/api-docs', swaggerUi.serve, (req, res) => {
     swaggerUi.setup(patchSpec(predefinedSpec))(req, res);
   });
 }
@@ -141,7 +148,7 @@ function updateSchemesAndHost(req) {
   }
 }
 
-module.exports.init = (aApp, aPredefinedSpec, aPath, aWriteInterval) => {
+module.exports.init = (aApp, aPredefinedSpec, aPath, aWriteInterval, options = {}) => {
   app = aApp;
   predefinedSpec = aPredefinedSpec;
   const writeInterval = aWriteInterval | 10 * 1000;
@@ -186,7 +193,7 @@ module.exports.init = (aApp, aPredefinedSpec, aPath, aWriteInterval) => {
         return next();
       }
     });
-    init();
+    init(options);
   }, 1000);
 };
 
